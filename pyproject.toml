@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sibyl-inference"
+version = "0.1.0"
+description = "Local actor inference with one-step cloud delegation for ALFWorld"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = [
+    "vllm==0.11.0",
+    "transformers<=4.57.3",
+]
+
+[tool.setuptools.packages.find]
+include = ["sibyl_inference*"]

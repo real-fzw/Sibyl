@@ -1,0 +1,13 @@
+Sibyl inference extracts and adapts inference components from a verl-agent
+integration. The upstream framework is developed by the verl and verl-agent
+teams. See LICENSE for the Apache License, Version 2.0.
+
+Upstream notice:
+
+This project includes code from the verl project.
+
+Copyright 2023-2024 Bytedance Ltd. and/or its affiliates
+
+Additional modifications and contributions:
+
+Copyright 2025 Nanyang Technological University (NTU), Singapore and the verl-agent (GiGPO) team.
