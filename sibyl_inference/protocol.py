@@ -40,10 +40,9 @@ Once you've finished your reasoning, you should choose an admissible action for 
 """
 
 RESPONSE = re.compile(
-    r"\A\s*<think>(?P<think>[^<>]+)</think><action>(?P<action>[^<>]+)</action>\s*\Z",
+    r"\A\s*<think>(?P<think>[^<>]+)</think>\s*<action>(?P<action>[^<>]+)</action>\s*\Z",
     re.DOTALL | re.IGNORECASE,
 )
-CHINESE = re.compile(r"[\u4e00-\u9fff]")
 
 
 def normalize_action(value: Any) -> str:
@@ -79,6 +78,11 @@ def build_actor_prompt(
             observation=observation, actions=rendered_actions,
         )
     else:
+        # Native initial observations already include the goal. Independent
+        # states may supply it separately; preserve the native prompt when
+        # present and include the goal when it would otherwise be omitted.
+        if task.strip() and task.strip() not in observation:
+            observation = f"{observation.rstrip()}\nYour task is to: {task.strip()}"
         prompt = NO_HISTORY.format(observation=observation, actions=rendered_actions)
     match = ADMISSIBLE_RE.search(prompt)
     if not match:
@@ -98,7 +102,8 @@ def project_actor_response(response: str) -> tuple[str, bool]:
     if start < 0 or end < 0 or end <= start:
         return normalize_action(lowered[-30:]), False
     action = normalize_action(lowered[start + 8:end])
-    valid = bool(RESPONSE.fullmatch(text)) and not CHINESE.search(text)
+    match = RESPONSE.fullmatch(text)
+    valid = bool(match and match.group("think").strip() and match.group("action").strip())
     return action, valid
 
 

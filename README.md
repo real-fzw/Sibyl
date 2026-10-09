@@ -22,6 +22,8 @@ The local agent chooses `call_cloud` when it needs help. The cloud supplies one 
 
 ## Method
 
+Paper overview; this release contains ALFWorld inference only.
+
 <p align="center">
   <img src="assets/method.png" width="1000" alt="The three-stage Sibyl training pipeline and inference flow, Figure 2 of the paper">
 </p>
@@ -57,6 +59,10 @@ One state per JSONL line:
 ```
 
 Supply past `observation`, `action`, and `result` entries in `history`. The caller executes `executed_action` and updates history. Check validity and errors first.
+
+For delegated steps, record `<executed action> [chosen by cloud]` in actor history, and `call_cloud -> <executed action>` in the optional `cloud_history`.
+
+The actor uses the latest 5 history entries, with input/output limits of 2048/512 tokens. The cloud sees the full history and `inventory` when supplied. Failed or invalid decisions return `executed_action: null`.
 
 </details>
 

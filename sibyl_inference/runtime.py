@@ -17,7 +17,7 @@ from .protocol import (
 class Actor:
     def __init__(
         self, model_dir: Path, *, max_response_tokens: int = 512,
-        max_prompt_tokens: int | None = None, gpu_memory_utilization: float = 0.9,
+        max_prompt_tokens: int | None = 2048, gpu_memory_utilization: float = 0.9,
     ) -> None:
         from transformers import AutoTokenizer
         from vllm import LLM, SamplingParams
@@ -45,8 +45,9 @@ class Actor:
         if self.max_prompt_tokens is not None:
             tokens = self.tokenizer.encode(rendered, add_special_tokens=False)
             if len(tokens) > self.max_prompt_tokens:
-                rendered = self.tokenizer.decode(
-                    tokens[-self.max_prompt_tokens:], skip_special_tokens=False
+                raise ValueError(
+                    f"Actor prompt exceeds the {self.max_prompt_tokens}-token limit; "
+                    "shorten the observation or history, or increase max_prompt_tokens"
                 )
         output = self.llm.generate([rendered], self.sampling, use_tqdm=False)
         return str(output[0].outputs[0].text or "")
@@ -100,10 +101,18 @@ def decide(actor: Any, state: Mapping[str, Any], cloud: Any = None) -> dict[str,
         "actor_prompt": prompt, "actor_response": response, "actor_action": action,
         "actor_protocol_valid": valid_protocol,
         "actor_action_admissible": action == CALL_CLOUD or action in admissible,
-        "cloud_called": action == CALL_CLOUD,
-        "executed_action": action,
+        "cloud_requested": action == CALL_CLOUD,
+        "cloud_called": False,
+        "executed_action": None,
     }
+    if not valid_protocol:
+        result["actor_error"] = "invalid_actor_protocol"
+        return result
+    if not result["actor_action_admissible"]:
+        result["actor_error"] = "inadmissible_actor_action"
+        return result
     if action != CALL_CLOUD:
+        result["executed_action"] = action
         return result
     if cloud is None:
         result["executed_action"] = None
@@ -115,14 +124,17 @@ def decide(actor: Any, state: Mapping[str, Any], cloud: Any = None) -> dict[str,
     )
     result["cloud_prompt"] = cloud_prompt
     try:
+        result["cloud_called"] = True
         cloud_response = cloud.generate(cloud_prompt)
         cloud_action, valid_cloud = project_cloud_response(cloud_response, admissible)
         result["cloud_response"] = cloud_response
         result["cloud_action"] = cloud_action
         result["cloud_action_valid"] = valid_cloud
-        result["executed_action"] = cloud_action if valid_cloud else CALL_CLOUD
+        if valid_cloud:
+            result["executed_action"] = cloud_action
+        else:
+            result["cloud_error"] = "invalid_cloud_action"
     except Exception as exc:
         result["cloud_action_valid"] = False
         result["cloud_error"] = f"{type(exc).__name__}: {exc}"
-        result["executed_action"] = CALL_CLOUD
     return result

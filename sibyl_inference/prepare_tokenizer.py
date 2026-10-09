@@ -23,37 +23,41 @@ def remove_qwen_prefill(template: str) -> tuple[str, bool]:
 
 
 def fix_tokenizer(model_dir: Path) -> None:
+    from transformers import PreTrainedTokenizerBase
+
     config_path = model_dir / "tokenizer_config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
-    seen_template = False
-    changed = False
-    if isinstance(config.get("chat_template"), str):
-        seen_template = True
-        config["chat_template"], edited = remove_qwen_prefill(config["chat_template"])
-        changed |= edited
+    templates = {}
+    if config.get("chat_template") is not None:
+        if not isinstance(config["chat_template"], str):
+            raise ValueError("Expected a single Qwen3 chat-template string")
+        templates["config"] = config["chat_template"]
     jinja_path = model_dir / "chat_template.jinja"
     if jinja_path.is_file():
-        seen_template = True
-        template, edited = remove_qwen_prefill(jinja_path.read_text(encoding="utf-8"))
-        if edited:
-            jinja_path.write_text(template, encoding="utf-8")
-        changed |= edited
-    if not seen_template:
+        templates["jinja"] = jinja_path.read_text(encoding="utf-8")
+    if not templates:
         raise ValueError("No Qwen3 chat template found in merged model")
-    already_verified = (
-        config.get(MARKER) is True
-        or config.get("cada_qwen3_fixed_protocol_template") is True
-    )
-    if not changed and not already_verified:
-        templates = [config.get("chat_template", "")]
-        if jinja_path.is_file():
-            templates.append(jinja_path.read_text(encoding="utf-8"))
-        if not any("add_generation_prompt" in value and "<|im_start|>assistant" in value
-                   and "<think>" not in value for value in templates):
-            raise ValueError("Unverified chat template; refusing to mark as fixed protocol")
+
+    # Validate every template before writing either file. Transformers may
+    # load the separate Jinja file in preference to tokenizer_config.json.
+    prepared = {}
+    for name, template in templates.items():
+        fixed, _ = remove_qwen_prefill(template)
+        tokenizer = PreTrainedTokenizerBase(chat_template=fixed)
+        rendered = tokenizer.apply_chat_template(
+            [{"role": "user", "content": "Sibyl tokenizer check"}],
+            tokenize=False, add_generation_prompt=True, enable_thinking=False,
+        )
+        if not rendered.rstrip().endswith("<|im_start|>assistant"):
+            raise ValueError("Chat template must end with a plain Qwen3 assistant prefix")
+        prepared[name] = fixed
+
+    if "config" in prepared:
+        config["chat_template"] = prepared["config"]
+    if "jinja" in prepared:
+        jinja_path.write_text(prepared["jinja"], encoding="utf-8")
     config[MARKER] = True
     config_path.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
 
 
 def main() -> None:

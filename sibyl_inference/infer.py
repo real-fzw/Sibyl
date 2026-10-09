@@ -20,7 +20,8 @@ def main() -> None:
     parser.add_argument("--cloud-base-url", help="OpenAI-compatible API base URL")
     parser.add_argument("--cloud-model", help="Cloud provider model identifier")
     parser.add_argument("--max-response-tokens", type=int, default=512)
-    parser.add_argument("--max-prompt-tokens", type=int)
+    parser.add_argument("--max-prompt-tokens", type=int, default=2048,
+                        help="Actor input token limit; defaults to 2048 for ALFWorld")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
     args = parser.parse_args()
     if args.max_response_tokens < 1:
