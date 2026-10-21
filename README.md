@@ -9,9 +9,25 @@
 </p>
 
 <p align="center">
+  Zhewei Fang<sup>*</sup>, Yuxin Zhang<sup>*</sup>, Zhenwei Shao, Mengze Li, Zheng Lin, Long Chen,<br>
+  Zhou Yu<sup>†</sup>, Zhe Chen, Zhiwen Chen, Zhaode Wang, Chengfei Lv
+  <br>
+  <sub>* Equal contribution. Both authors conducted this work during their internships at Alibaba Group.<br>
+  † Corresponding author.</sub>
+</p>
+
+<p align="center">
   <a href="https://arxiv.org/abs/2610.05383">Paper</a>
   &nbsp;·&nbsp; Inference code: ready
   &nbsp;·&nbsp; Models: coming soon
+</p>
+
+<p align="center">
+  <a href="https://www.hdu.edu.cn/"><img src="assets/affiliations/hdu.svg" width="220" align="middle" alt="Hangzhou Dianzi University"></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.fudan.edu.cn/"><img src="assets/affiliations/fudan.png" width="180" align="middle" alt="Fudan University"></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.alibabagroup.com/"><img src="assets/affiliations/alibaba.png" width="220" align="middle" alt="Alibaba Group"></a>
 </p>
 
 The local agent chooses `call_cloud` when it needs help. The cloud supplies one action, then the local agent continues.
